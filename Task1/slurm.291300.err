@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "new_dqn.py", line 43, in <module>
+    import gym
+ImportError: No module named gym
+srun: error: gpu01: task 0: Exited with exit code 1
