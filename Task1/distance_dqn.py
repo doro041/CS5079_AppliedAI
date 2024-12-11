@@ -205,7 +205,7 @@ if __name__ == "__main__":
         env = gym.make("FrozenLake-v1", desc=random_map, render_mode="rgb_array")
         env.reset()
 
-        agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr)
+        agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr, env=env)
         print('gamma: ', args.gamma, "learning rate: ", args.lr, "eps decay: ", args.decay)
 
         print(env.desc)
