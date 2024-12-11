@@ -70,7 +70,7 @@ class DQNAgent():
         return tl.models.Model(inputs=ni, outputs=nn)
     
     def save_ckpt(self, model):  # save trained weights
-        path = os.path.join('model', '_'.join([self.alg_name, self.learning_rate, self.discount_factor]))
+        path = os.path.join('model', '_distance_'.join([self.alg_name, self.learning_rate, self.discount_factor]))
         if not os.path.exists(path):
             os.makedirs(path)
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
@@ -80,7 +80,7 @@ class DQNAgent():
 
 
     def load_ckpt(self, model):  # load trained weights
-        path = os.path.join('model', '_'.join([self.alg_name, self.learning_rate, self.discount_factor]))
+        path = os.path.join('model', '_distance_'.join([self.alg_name, self.learning_rate, self.discount_factor]))
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
 
 
