@@ -52,6 +52,7 @@ parser.add_argument('--train', dest='train', action='store_true', default=False)
 parser.add_argument('--test', dest='test', action='store_true', default=False)
 parser.add_argument('--ep', dest='ep', type=int, default=10000)
 parser.add_argument('--decay', dest='decay', type=float, default=0.999993)
+parser.add_argument('--gamma', dest='gamma', type=float, default=0.9)
 args = parser.parse_args()
 tl.logging.set_verbosity(tl.logging.DEBUG)
 tl.logging.set_verbosity(tl.logging.DEBUG)
@@ -59,7 +60,7 @@ tl.logging.set_verbosity(tl.logging.DEBUG)
 class DQNAgent():
     def __init__(self,
                   env_id='FrozenLake-v1',
-                  discount_factor=0.99,
+                  discount_factor=0.90,
                   max_eps=1,
                   min_eps=0.1,
                   num_episodes=10000,
@@ -76,6 +77,7 @@ class DQNAgent():
         self.goal_reached_n = 0  # count the number of times the goal is reached
         self.eps = self.max_eps
         self.eps_decay = eps_decay
+        self.q_table = np.zeros((100, 4))
 
 
     ##################### DQN ##########################
@@ -119,6 +121,7 @@ class DQNAgent():
             while True:
                 ## Choose an action by greedily (with e chance of random action) from the Q-network
                 allQ = qnetwork(np.asarray([self.to_one_hot(s, 100)], dtype=np.float32)).numpy()
+                self.q_table[s] = allQ
                 a = np.argmax(allQ, 1)
 
                 ## e-Greedy Exploration !!! sample random action
@@ -146,7 +149,6 @@ class DQNAgent():
 
                 ## Obtain the Q' values by feeding the new state through our network
                 Q1 = qnetwork(np.asarray([self.to_one_hot(next_state, 100)], dtype=np.float32)).numpy()
-
                 ## Obtain maxQ' and set our target value for chosen action.
                 maxQ1 = np.max(Q1)  # in Q-Learning, policy is greedy, so we use "max" to select the next action.
                 targetQ = allQ
@@ -174,16 +176,18 @@ class DQNAgent():
                     break
 
             ## Note that, the rewards here with random action
-            if self.num_episodes < 100 or i % 1000 == 0:
+            if i % 10000 == 0:
                 print('Training  | Episode: {}/{}  | Episode Reward: {:.4f} | Epsilon: {:.4f} | Goal reached: {}' \
                         .format(i, self.num_episodes, rAll, self.eps, self.goal_reached_n))
-
+            if i % 100000 == 0 :
+                print(self.q_table)
             if i == 0:
                 all_episode_reward.append(rAll)
             else:
                 all_episode_reward.append(all_episode_reward[-1] * 0.9 + rAll * 0.1)
 
         self.save_ckpt(qnetwork)  # save model
+        print(self.q_table)
         plt.plot(all_episode_reward)
         if not os.path.exists('image'):
             os.makedirs('image')
@@ -219,13 +223,13 @@ from gym.envs.toy_text.frozen_lake import generate_random_map
 
 if __name__ == '__main__':
 
-    agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay)
+    agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma)
 
     qnetwork = agent.get_model([None, 100])
     qnetwork.train()
     train_weights = qnetwork.trainable_weights
 
-    optimizer = tf.optimizers.SGD(learning_rate=0.1)
+    optimizer = tf.optimizers.SGD(learning_rate=0.01)
     random_map = generate_random_map(size=10, p=0.3)    
 
     env = gym.make(agent.env_id, desc=random_map)
