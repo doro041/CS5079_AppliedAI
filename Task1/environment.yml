@@ -5,3 +5,9 @@ channels:
   - bioconda
   - r
 prefix: /home/u14jp20/sharedscratch/.conda/envs/task1_venv
+dependencies:
+  - python>=3.5
+  - anaconda
+  - pip
+  - pip:
+    - -r file:requirements.txt
