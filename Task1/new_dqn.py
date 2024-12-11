@@ -230,7 +230,7 @@ if __name__ == '__main__':
     np.set_printoptions(suppress=True)
 
     agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr)
-
+    print('gamma: ', args.gamma, "learning rate: ", args.lr, "eps decay: ", args.decay)
     qnetwork = agent.get_model([None, 100])
     qnetwork.train()
     train_weights = qnetwork.trainable_weights
