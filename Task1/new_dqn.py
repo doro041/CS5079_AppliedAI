@@ -227,6 +227,8 @@ from gym.envs.toy_text.frozen_lake import generate_random_map
 
 if __name__ == '__main__':
 
+    np.set_printoptions(suppress=True)
+
     agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr)
 
     qnetwork = agent.get_model([None, 100])
