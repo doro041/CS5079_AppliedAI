@@ -53,6 +53,8 @@ parser.add_argument('--test', dest='test', action='store_true', default=False)
 parser.add_argument('--ep', dest='ep', type=int, default=10000)
 parser.add_argument('--decay', dest='decay', type=float, default=0.999993)
 parser.add_argument('--gamma', dest='gamma', type=float, default=0.9)
+parser.add_argument('--lr', dest='lr', type=float, default=0.01)
+
 args = parser.parse_args()
 tl.logging.set_verbosity(tl.logging.DEBUG)
 tl.logging.set_verbosity(tl.logging.DEBUG)
@@ -64,7 +66,8 @@ class DQNAgent():
                   max_eps=1,
                   min_eps=0.1,
                   num_episodes=10000,
-                  eps_decay=0.999993
+                  eps_decay=0.999993,
+                  learning_rate=0.01
                   ):
         self.env_id = env_id
         self.discount_factor = discount_factor
@@ -78,6 +81,7 @@ class DQNAgent():
         self.eps = self.max_eps
         self.eps_decay = eps_decay
         self.q_table = np.zeros((100, 4))
+        self.learning_rate = learning_rate
 
 
     ##################### DQN ##########################
@@ -98,14 +102,14 @@ class DQNAgent():
 
 
     def save_ckpt(self, model):  # save trained weights
-        path = os.path.join('model', '_'.join([self.alg_name, self.env_id]))
+        path = os.path.join('model', '_'.join([self.alg_name, self.env_id, self.learning_rate, self.discount_factor]))
         if not os.path.exists(path):
             os.makedirs(path)
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
 
 
     def load_ckpt(self, model):  # load trained weights
-        path = os.path.join('model', '_'.join([self.alg_name, self.env_id]))
+        path = os.path.join('model', '_'.join([self.alg_name, self.env_id, self.learning_rate, self.discount_factor]))
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
 
 
@@ -223,13 +227,13 @@ from gym.envs.toy_text.frozen_lake import generate_random_map
 
 if __name__ == '__main__':
 
-    agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma)
+    agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr)
 
     qnetwork = agent.get_model([None, 100])
     qnetwork.train()
     train_weights = qnetwork.trainable_weights
 
-    optimizer = tf.optimizers.SGD(learning_rate=0.01)
+    optimizer = tf.optimizers.SGD(learning_rate=agent.learning_rate)
     random_map = generate_random_map(size=10, p=0.3)    
 
     env = gym.make(agent.env_id, desc=random_map)
