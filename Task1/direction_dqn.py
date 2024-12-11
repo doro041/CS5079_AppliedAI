@@ -65,13 +65,17 @@ class DQNAgent():
     ## Define Q-network q(a,s) that ouput the rewards of 4 actions by given state, i.e. Action-Value Function.
     # encoding for state: 10x10 grid can be represented by one-hot vector with 100 integers.
     def get_model(self, inputs_shape):
-
+        init_weights = np.hstack((np.random.uniform(0, 0.01, (100, 1)), 
+                        np.random.uniform(0.5, 0.51, (100, 1)), 
+                        np.random.uniform(0.5, 0.51, (100, 1)), 
+                        np.random.uniform(0, 0.01, (100, 1)))).astype('float32')
+        
         ni = tl.layers.Input(inputs_shape, name='observation')
-        nn = tl.layers.Dense(4, act=None, W_init=tf.random_uniform_initializer(0, 0.01), b_init=None, name='q_a_s')(ni)
+        nn = tl.layers.Dense(4, act=None, W_init=tf.constant_initializer(init_weights), b_init=None, name='q_a_s')(ni)
         return tl.models.Model(inputs=ni, outputs=nn)
     
     def save_ckpt(self, model):  # save trained weights
-        path = os.path.join('model', '_distance_'.join([self.alg_name, self.learning_rate, self.discount_factor]))
+        path = os.path.join('model', '_direction_'.join([self.alg_name, self.learning_rate, self.discount_factor]))
         if not os.path.exists(path):
             os.makedirs(path)
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
@@ -81,7 +85,7 @@ class DQNAgent():
 
 
     def load_ckpt(self, model):  # load trained weights
-        path = os.path.join('model', '_distance_'.join([self.alg_name, self.learning_rate, self.discount_factor]))
+        path = os.path.join('model', '_direction_'.join([self.alg_name, self.learning_rate, self.discount_factor]))
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
 
 
@@ -210,6 +214,7 @@ if __name__ == "__main__":
         print('gamma: ', args.gamma, "learning rate: ", args.lr, "eps decay: ", args.decay)
 
         print(env.desc)
+        print(agent.qnetwork.trainable_weights)
 
         agent.train()
     
