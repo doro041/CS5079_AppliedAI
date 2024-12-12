@@ -16,4 +16,4 @@
 module load miniconda3
 source activate task1_venv
 
-srun python action_dqn.py --train --ep=500000 --decay=0.99999  --gamma=$1 --lr=$2
+srun python action_dqn.py --train --ep=1000000 --decay=0.99999  --gamma=$1 --lr=$2
