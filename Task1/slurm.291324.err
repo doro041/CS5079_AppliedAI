@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/scratch/users/u14jp20/applied_ai/CS5079_AppliedAI/Task1/new_dqn.py", line 43, in <module>
-srun: error: gpu01: task 0: Exited with exit code 1
-    import gym
-ModuleNotFoundError: No module named 'gym'

@@ -1,3 +1,0 @@
-  File "new_dqn.py", line 155
-SyntaxError: Non-ASCII character '\xe2' in file new_dqn.py on line 155, but no encoding declared; see http://www.python.org/peps/pep-0263.html for details
-srun: error: gpu01: task 0: Exited with exit code 1
