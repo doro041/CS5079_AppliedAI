@@ -1,0 +1,25 @@
+2024-12-11 20:30:29.820874: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:32] Could not find cuda drivers on your machine, GPU will not be used.
+2024-12-11 20:30:29.907007: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:32] Could not find cuda drivers on your machine, GPU will not be used.
+2024-12-11 20:30:29.993948: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1733949030.077554   23404 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1733949030.100074   23404 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2024-12-11 20:30:30.285073: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+W0000 00:00:1733949054.675062   23404 gpu_device.cc:2344] Cannot dlopen some GPU libraries. Please make sure the missing libraries mentioned above are installed properly if you would like to use GPU. Follow the guide at https://www.tensorflow.org/install/gpu for how to download and setup the required libraries for your platform.
+Skipping registering GPU devices...
+[TL] Input  observation: [None, 100]
+[TL] Dense  q_a_s: 4 No Activation
+/home/u14jp20/sharedscratch/.conda/envs/task1_venv/lib/python3.12/site-packages/gym/utils/passive_env_checker.py:233: DeprecationWarning: `np.bool8` is a deprecated alias for `np.bool_`.  (Deprecated NumPy 1.24)
+  if not isinstance(terminated, (bool, np.bool8)):
+Traceback (most recent call last):
+  File "/scratch/users/u14jp20/applied_ai/CS5079_AppliedAI/Task1/direction_dqn.py", line 219, in <module>
+    
+  File "/scratch/users/u14jp20/applied_ai/CS5079_AppliedAI/Task1/direction_dqn.py", line 173, in train
+    self.save_ckpt(self.qnetwork)  # save model
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/scratch/users/u14jp20/applied_ai/CS5079_AppliedAI/Task1/direction_dqn.py", line 78, in save_ckpt
+    path = os.path.join('model', '_'.join(['direction', self.alg_name, str(self.learning_rate), str(self.discount_factor)]))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: sequence item 1: expected str instance, float found
+srun: error: gpu01: task 0: Exited with exit code 1
