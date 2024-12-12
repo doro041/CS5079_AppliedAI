@@ -61,7 +61,7 @@ tl.logging.set_verbosity(tl.logging.DEBUG)
 
 class DQNAgent():
     def __init__(self,
-                  env_id='FrozenLake-v1',
+                  env=None,
                   discount_factor=0.90,
                   max_eps=1,
                   min_eps=0.1,
@@ -69,20 +69,24 @@ class DQNAgent():
                   eps_decay=0.999993,
                   learning_rate=0.01
                   ):
-        self.env_id = env_id
         self.discount_factor = discount_factor
-        self.max_eps = 1  # e-Greedy Exploration, the larger the more random
-        self.min_eps = 0.1
+        self.max_eps = max_eps
+        self.min_eps = min_eps
         self.num_episodes = num_episodes
-        self.render = False  # display the game environment
         self.rList = [] #Record reward
         self.alg_name = 'DQN'
         self.goal_reached_n = 0  # count the number of times the goal is reached
         self.eps = self.max_eps
         self.eps_decay = eps_decay
         self.q_table = np.zeros((100, 4))
+        self.env = env
         self.learning_rate = learning_rate
 
+        self.qnetwork = self.get_model([None, 100])
+        self.qnetwork.train()
+
+        self.train_weights = self.qnetwork.trainable_weights
+        self.optimizer = tf.optimizers.SGD(learning_rate=learning_rate)
 
     ##################### DQN ##########################
 
@@ -102,37 +106,38 @@ class DQNAgent():
 
 
     def save_ckpt(self, model):  # save trained weights
-        path = os.path.join('model', '_'.join([self.alg_name, self.env_id, self.learning_rate, self.discount_factor]))
+        path = os.path.join('model', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor)]))
         if not os.path.exists(path):
             os.makedirs(path)
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
 
+        with open(os.path.join(path, 'env_desc.txt'), 'w') as f:
+            f.write(str(self.env.desc))
 
     def load_ckpt(self, model):  # load trained weights
-        path = os.path.join('model', '_'.join([self.alg_name, self.env_id, self.learning_rate, self.discount_factor]))
+        path = os.path.join('model', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor)]))
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
 
 
-    def train(self, qnetwork, train_weights, optimizer, env, t0):
-        flattened_map = env.desc.flatten()
+    def train(self):
+        flattened_map = self.env.desc.flatten()
         all_episode_reward = []
         for i in range(self.num_episodes):
             visited = set()
             ## Reset environment and get first new observation
-            s = env.reset()[0]  # observation is state
+            s = self.env.reset()[0]  # observation is state
             rAll = 0
-            if self.render: env.render()
             while True:
                 ## Choose an action by greedily (with e chance of random action) from the Q-network
-                allQ = qnetwork(np.asarray([self.to_one_hot(s, 100)], dtype=np.float32)).numpy()
+                allQ = self.qnetwork(np.asarray([self.to_one_hot(s, 100)], dtype=np.float32)).numpy()
                 self.q_table[s] = allQ
                 a = np.argmax(allQ, 1)
 
                 ## e-Greedy Exploration !!! sample random action
                 if np.random.rand(1) < self.eps:
-                    a[0] = env.action_space.sample()
-                ## Get new state and reward from environment
-                next_state, r, d, _, _ = env.step(a[0])
+                    a[0] = self.env.action_space.sample()
+                ## Get new state and reward from self.ironment
+                next_state, r, d, _, _ = self.env.step(a[0])
 
                 # if flattened_map[next_state] == b'G':
                 #     self.goal_reached_n += 1
@@ -142,31 +147,29 @@ class DQNAgent():
                 elif next_state == s and not d:
                     r = -10
                 elif flattened_map[next_state] == b'H':
-                    r = -30
+                    r = -50
                 elif flattened_map[next_state] == b'G':
                     r = 100
                     self.goal_reached_n += 1
                 elif flattened_map[next_state] == b'F':
                     r = -1
-
-                if self.render: env.render()
-
+                
                 ## Obtain the Q' values by feeding the new state through our network
-                Q1 = qnetwork(np.asarray([self.to_one_hot(next_state, 100)], dtype=np.float32)).numpy()
+                q1 = self.qnetwork(np.asarray([self.to_one_hot(next_state, 100)], dtype=np.float32)).numpy()
                 ## Obtain maxQ' and set our target value for chosen action.
-                maxQ1 = np.max(Q1)  # in Q-Learning, policy is greedy, so we use "max" to select the next action.
+                max_q1 = np.max(q1)  # in Q-Learning, policy is greedy, so we use "max" to select the next action.
                 targetQ = allQ
-                targetQ[0, a[0]] = r + self.discount_factor * maxQ1
+                targetQ[0, a[0]] = r + self.discount_factor * max_q1
                 ## Train network using target and predicted Q values
                 # it is not real target Q value, it is just an estimation,
                 # but check the Q-Learning update formula:
                 #    Q'(s,a) <- Q(s,a) + alpha(r + lambd * maxQ(s',a') - Q(s, a))
                 # minimizing |r + lambd * maxQ(s',a') - Q(s, a)|^2 equals to force Q'(s,a) ≈ Q(s,a)
                 with tf.GradientTape() as tape:
-                    _qvalues = qnetwork(np.asarray([self.to_one_hot(s, 100)], dtype=np.float32))
+                    _qvalues = self.qnetwork(np.asarray([self.to_one_hot(s, 100)], dtype=np.float32))
                     _loss = tl.cost.mean_squared_error(targetQ, _qvalues, is_mean=False)
-                grad = tape.gradient(_loss, train_weights)
-                optimizer.apply_gradients(zip(grad, train_weights))
+                grad = tape.gradient(_loss, self.train_weights)
+                self.optimizer.apply_gradients(zip(grad, self.train_weights))
 
                 rAll += r
                 s = next_state
@@ -190,38 +193,42 @@ class DQNAgent():
             else:
                 all_episode_reward.append(all_episode_reward[-1] * 0.9 + rAll * 0.1)
 
-        self.save_ckpt(qnetwork)  # save model
+        self.save_ckpt(self.qnetwork)  # save model
         print(self.q_table)
         plt.plot(all_episode_reward)
+        plt.title('Training Reward of the DQN Agent Over the Episodes')
+        plt.xlabel('Episode')
+        plt.ylabel('Reward')
+        
         if not os.path.exists('image'):
             os.makedirs('image')
-        plt.savefig(os.path.join('image', '_'.join([self.alg_name, self.env_id])))
+        plt.savefig(os.path.join('image', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor)]) + '.png'))
 
-    
-    def test(self, qnetwork, num_episodes, env, t0):
-        self.load_ckpt(qnetwork)  # load model
-        for i in range(num_episodes):
-            ## Reset environment and get first new observation
-            s = env.reset()[0]  # observation is state, integer 0 ~ 15
-            rAll = 0
-            if self.render: env.render()
-            for j in range(99):  # step index, maximum step is 99
-                ## Choose an action by greedily (with e chance of random action) from the Q-network
-                allQ = qnetwork(np.asarray([self.to_one_hot(s, 16)], dtype=np.float32)).numpy()
-                a = np.argmax(allQ, 1)  # no epsilon, only greedy for testing
 
-                ## Get new state and reward from environment
-                s1, r, d, _ = env.step(a[0])
-                rAll += r
-                s = s1
-                if self.render: env.render()
-                ## Reduce chance of random action if an episode is done.
-                if d: break
+    # def test(self, qnetwork, num_episodes, env, t0):
+    #     self.load_ckpt(qnetwork)  # load model
+    #     for i in range(num_episodes):
+    #         ## Reset environment and get first new observation
+    #         s = env.reset()[0]  # observation is state, integer 0 ~ 15
+    #         rAll = 0
+    #         if self.render: env.render()
+    #         for j in range(99):  # step index, maximum step is 99
+    #             ## Choose an action by greedily (with e chance of random action) from the Q-network
+    #             allQ = qnetwork(np.asarray([self.to_one_hot(s, 16)], dtype=np.float32)).numpy()
+    #             a = np.argmax(allQ, 1)  # no epsilon, only greedy for testing
 
-            print('Testing  | Episode: {}/{}  | Episode Reward: {:.4f} | Running Time: {:.4f}' \
-                  .format(i, num_episodes, rAll, time.time() - t0))
-            self.rList.append(rAll)
-        print("Correct rate: " + str(sum(self.rList) / num_episodes * 100) + "%")
+    #             ## Get new state and reward from environment
+    #             s1, r, d, _ = env.step(a[0])
+    #             rAll += r
+    #             s = s1
+    #             if self.render: env.render()
+    #             ## Reduce chance of random action if an episode is done.
+    #             if d: break
+
+    #         print('Testing  | Episode: {}/{}  | Episode Reward: {:.4f} | Running Time: {:.4f}' \
+    #               .format(i, num_episodes, rAll, time.time() - t0))
+    #         self.rList.append(rAll)
+    #     print("Correct rate: " + str(sum(self.rList) / num_episodes * 100) + "%")
 
 from gym.envs.toy_text.frozen_lake import generate_random_map
 
@@ -229,22 +236,14 @@ if __name__ == '__main__':
 
     np.set_printoptions(suppress=True)
 
-    agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr)
-    print('gamma: ', args.gamma, "learning rate: ", args.lr, "eps decay: ", args.decay)
-    qnetwork = agent.get_model([None, 100])
-    qnetwork.train()
-    train_weights = qnetwork.trainable_weights
-
-    optimizer = tf.optimizers.SGD(learning_rate=agent.learning_rate)
-    random_map = generate_random_map(size=10, p=0.3)    
-
-    env = gym.make(agent.env_id, desc=random_map)
-    env.reset()
-
-    t0 = time.time()
-
     if args.train:
-        agent.train(qnetwork, train_weights, optimizer, env, t0)
+        random_map = generate_random_map(size=10, p=0.3)    
+        env = gym.make("FrozenLake-v1", desc=random_map, render_mode="rgb_array")
+        env.reset()
 
-    if args.test:
-        agent.test(qnetwork, 100, env, t0)
+        agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr, env=env)
+        print('gamma: ', args.gamma, "learning rate: ", args.lr, "eps decay: ", args.decay)
+
+        print(env.desc)
+
+        agent.train()
