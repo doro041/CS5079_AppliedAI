@@ -46,6 +46,7 @@ import numpy as np
 import tensorflow as tf
 import tensorlayer as tl
 import argparse
+from datetime import datetime
 
 parser = argparse.ArgumentParser(description='Train or test neural net motor controller.')
 parser.add_argument('--train', dest='train', action='store_true', default=False)
@@ -106,7 +107,7 @@ class DQNAgent():
 
 
     def save_ckpt(self, model):  # save trained weights
-        path = os.path.join('model', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor)]))
+        path = os.path.join('model', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]))
         if not os.path.exists(path):
             os.makedirs(path)
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
@@ -115,7 +116,7 @@ class DQNAgent():
             f.write(str(self.env.desc))
 
     def load_ckpt(self, model):  # load trained weights
-        path = os.path.join('model', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor)]))
+        path = os.path.join('model', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]))
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
 
 
@@ -202,7 +203,7 @@ class DQNAgent():
 
         if not os.path.exists('image'):
             os.makedirs('image')
-        plt.savefig(os.path.join('image', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor)]) + '.png'))
+        plt.savefig(os.path.join('image', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]) + '.png'))
 
 
     # def test(self, qnetwork, num_episodes, env, t0):
