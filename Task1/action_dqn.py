@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import time
 
@@ -8,7 +9,6 @@ import tensorflow as tf
 import tensorlayer as tl
 from gym.envs.toy_text.frozen_lake import generate_random_map
 import argparse
-from datetime import datetime
 
 parser = argparse.ArgumentParser(description='Train or test neural net motor controller.')
 parser.add_argument('--train', dest='train', action='store_true', default=False)
@@ -39,7 +39,7 @@ class DQNAgent():
         self.rList = [] #Record reward
         self.alg_name = 'DQN'
         self.goal_reached_n = 0  # count the number of times the goal is reached
-        self.eps = self.max_eps
+        self.eps = 0.2
         self.eps_decay = eps_decay
         self.q_table = np.zeros((100, 4))
         self.goal_position = np.array(np.where(env.desc == b'G')).flatten()
@@ -66,13 +66,12 @@ class DQNAgent():
     ## Define Q-network q(a,s) that ouput the rewards of 4 actions by given state, i.e. Action-Value Function.
     # encoding for state: 10x10 grid can be represented by one-hot vector with 100 integers.
     def get_model(self, inputs_shape):
-
         ni = tl.layers.Input(inputs_shape, name='observation')
         nn = tl.layers.Dense(4, act=None, W_init=tf.random_uniform_initializer(0, 0.01), b_init=None, name='q_a_s')(ni)
         return tl.models.Model(inputs=ni, outputs=nn)
     
     def save_ckpt(self, model):  # save trained weights
-        path = os.path.join('model', '_'.join(['distance', self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]))
+        path = os.path.join('model', '_'.join(['ACTION', self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]))
         if not os.path.exists(path):
             os.makedirs(path)
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
@@ -82,7 +81,7 @@ class DQNAgent():
 
 
     def load_ckpt(self, model):  # load trained weights
-        path = os.path.join('model', '_'.join(['distance', self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]))
+        path = os.path.join('model', '_'.join(['ACTION', self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]))
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
 
 
@@ -95,23 +94,21 @@ class DQNAgent():
             s = self.env.reset()[0]  # observation is state
             rAll = 0
             while True:
+
+                # This one always goes right (2) or down (1) (we can do it since it's slippery so it can still explore)
+
                 ## Choose an action by greedily (with e chance of random action) from the Q-network
                 allQ = self.qnetwork(np.asarray([self.to_one_hot(s, 100)], dtype=np.float32)).numpy()
-                self.q_table[s] = allQ
-                a = np.argmax(allQ, 1)
+                self.q_table[s] = allQ 
 
-                ## e-Greedy Exploration !!! sample random action
+                a = np.argmax(allQ[0][1:3]) + 1 # only right and down
                 if np.random.rand(1) < self.eps:
-                    a[0] = self.env.action_space.sample()
+                    a = np.argmin(allQ[0][1:3]) + 1  # exploration - choose the other way
                 ## Get new state and reward from self.ironment
-                next_state, r, d, _, _ = self.env.step(a[0])
+                next_state, r, d, _, _ = self.env.step(a)
 
                 # if flattened_map[next_state] == b'G':
                 #     self.goal_reached_n += 1
-                self.position = np.array([next_state // 10, next_state % 10])
-                
-                manhattan_distance = np.abs(self.position - self.goal_position).sum()
-                dist_reward = manhattan_distance / self.max_distance
 
                 if next_state in visited:
                     r = -10
@@ -124,16 +121,13 @@ class DQNAgent():
                     self.goal_reached_n += 1
                 elif flattened_map[next_state] == b'F':
                     r = -1
-
-                if r < 0:
-                    r *= dist_reward
                 
                 ## Obtain the Q' values by feeding the new state through our network
                 q1 = self.qnetwork(np.asarray([self.to_one_hot(next_state, 100)], dtype=np.float32)).numpy()
                 ## Obtain maxQ' and set our target value for chosen action.
                 max_q1 = np.max(q1)  # in Q-Learning, policy is greedy, so we use "max" to select the next action.
                 targetQ = allQ
-                targetQ[0, a[0]] = r + self.discount_factor * max_q1
+                targetQ[0, a] = r + self.discount_factor * max_q1
                 ## Train network using target and predicted Q values
                 # it is not real target Q value, it is just an estimation,
                 # but check the Q-Learning update formula:
@@ -152,8 +146,8 @@ class DQNAgent():
                     visited.add(s)
                 ## Reduce chance of random action if an episode is done.
                 if d == True:
-                    if self.eps > self.min_eps:
-                        self.eps *= self.eps_decay
+                #     if self.eps > self.min_eps:
+                #         self.eps *= self.eps_decay
                     break
 
             ## Note that, the rewards here with random action
@@ -175,7 +169,7 @@ class DQNAgent():
         plt.ylabel('Reward')
         if not os.path.exists('image'):
             os.makedirs('image')
-        plt.savefig(os.path.join('image', '_'.join(['distance', self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]) + '.png'))
+        plt.savefig(os.path.join('image', '_'.join(['ACTION', self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]) + '.png'))
 
     # def test(self):
     #     self.load_ckpt(qnetwork)  # load model
@@ -211,10 +205,11 @@ if __name__ == "__main__":
         env.reset()
 
         agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr, env=env)
-        print('___DISTANCE___')
+        print("___ACTION___")
         print('gamma: ', args.gamma, "learning rate: ", args.lr, "eps decay: ", args.decay)
 
         print(env.desc)
+        print(agent.qnetwork.trainable_weights)
 
         agent.train()
     

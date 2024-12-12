@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import time
 
@@ -75,7 +76,7 @@ class DQNAgent():
         return tl.models.Model(inputs=ni, outputs=nn)
     
     def save_ckpt(self, model):  # save trained weights
-        path = os.path.join('model', '_'.join(['direction', self.alg_name, str(self.learning_rate), str(self.discount_factor)]))
+        path = os.path.join('model', '_'.join(['direction', self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]))
         if not os.path.exists(path):
             os.makedirs(path)
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
@@ -85,7 +86,7 @@ class DQNAgent():
 
 
     def load_ckpt(self, model):  # load trained weights
-        path = os.path.join('model', '_'.join(['direction', self.alg_name, str(self.learning_rate), str(self.discount_factor)]))
+        path = os.path.join('model', '_'.join(['direction', self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]))
         tl.files.save_weights_to_hdf5(os.path.join(path, 'dqn_model.hdf5'), model)
 
 
@@ -178,7 +179,7 @@ class DQNAgent():
         plt.ylabel('Reward')
         if not os.path.exists('image'):
             os.makedirs('image')
-        plt.savefig(os.path.join('image', '_'.join(['direction', self.alg_name, str(self.learning_rate), str(self.discount_factor)]) + '.png'))
+        plt.savefig(os.path.join('image', '_'.join(['direction', self.alg_name, str(self.learning_rate), str(self.discount_factor), datetime.now().strftime("%Y%m%d_%H%M%S")]) + '.png'))
 
     # def test(self):
     #     self.load_ckpt(qnetwork)  # load model
