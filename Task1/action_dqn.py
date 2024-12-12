@@ -117,7 +117,7 @@ class DQNAgent():
                 elif flattened_map[next_state] == b'H':
                     r = -50
                 elif flattened_map[next_state] == b'G':
-                    r = 100
+                    r = 1000
                     self.goal_reached_n += 1
                 elif flattened_map[next_state] == b'F':
                     r = -1
@@ -200,12 +200,22 @@ if __name__ == "__main__":
     np.set_printoptions(suppress=True)
 
     if args.train:
-        random_map = generate_random_map(size=10, p=0.3)    
+        # random_map = generate_random_map(size=10, p=0.3)    
+        random_map = ['SFFFFHHHHH',
+        'FHHFFFHFFH',
+        'HHHHHFHHHH',
+        'HHFHHFFFFH',
+        'FHFHFFHFFF',
+        'FFHHFFFHHH',
+        'HHHHHFFFFH',
+        'HHHHHHHFHH',
+        'HFHHHFHFHH',
+        'HFHHHHHFFG']
         env = gym.make("FrozenLake-v1", desc=random_map, render_mode="rgb_array")
         env.reset()
 
         agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr, env=env)
-        print("___ACTION___")
+        print("___ACTION___MAP")
         print('gamma: ', args.gamma, "learning rate: ", args.lr, "eps decay: ", args.decay)
 
         print(env.desc)
