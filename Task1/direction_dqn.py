@@ -214,6 +214,7 @@ if __name__ == "__main__":
         env.reset()
 
         agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr, env=env)
+        print("___DIRECTION___")
         print('gamma: ', args.gamma, "learning rate: ", args.lr, "eps decay: ", args.decay)
 
         print(env.desc)

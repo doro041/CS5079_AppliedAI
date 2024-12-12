@@ -199,7 +199,7 @@ class DQNAgent():
         plt.title('Training Reward of the DQN Agent Over the Episodes')
         plt.xlabel('Episode')
         plt.ylabel('Reward')
-        
+
         if not os.path.exists('image'):
             os.makedirs('image')
         plt.savefig(os.path.join('image', '_'.join([self.alg_name, str(self.learning_rate), str(self.discount_factor)]) + '.png'))
@@ -242,6 +242,7 @@ if __name__ == '__main__':
         env.reset()
 
         agent = DQNAgent(num_episodes=args.ep, eps_decay=args.decay, discount_factor=args.gamma, learning_rate=args.lr, env=env)
+        print("___NORMAL___")
         print('gamma: ', args.gamma, "learning rate: ", args.lr, "eps decay: ", args.decay)
 
         print(env.desc)
