@@ -101,9 +101,9 @@ class DQNAgent():
     ## Define Q-network q(a,s) that ouput the rewards of 4 actions by given state, i.e. Action-Value Function.
     # encoding for state: 10x10 grid can be represented by one-hot vector with 100 integers.
     def get_model(self, inputs_shape):
-        ni = tl.layers.Input(inputs_shape, name='observation')
-        nn = tl.layers.Dense(4, act=None, W_init=tf.random_uniform_initializer(0, 0.01), b_init=None, name='q_a_s')(ni)
-        return tl.models.Model(inputs=ni, outputs=nn)
+        input_layer = tl.layers.Input(inputs_shape, name='observation')
+        output_layer = tl.layers.Dense(4, act=None, W_init=tf.random_uniform_initializer(0, 0.01), b_init=None, name='q_a_s')(input_layer)
+        return tl.models.Model(inputs=input_layer, outputs=output_layer)
 
 
     def save_ckpt(self, model):  # save trained weights
@@ -174,7 +174,7 @@ class DQNAgent():
 
                 rAll += r
                 s = next_state
-                
+            
                 if s not in visited:
                     visited.add(s)
                 ## Reduce chance of random action if an episode is done.
