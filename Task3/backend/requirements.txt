@@ -1,0 +1,8 @@
+flask
+flask-cors
+gunicorn
+numpy
+pandas
+scipy
+scikit-learn
+git+https://github.com/daviddavo/lightfm
